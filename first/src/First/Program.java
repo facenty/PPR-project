@@ -134,6 +134,7 @@ public final class Program {
 
         DatagramSocket socket = new DatagramSocket();
         while((data = bufferedReader.readLine()) != null) {
+            data = data.concat("\n");
             byte[] byteData = data.getBytes();
             DatagramPacket dp = new DatagramPacket(byteData, byteData.length, ipAddress, portNumber);
             socket.send(dp);
