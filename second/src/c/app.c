@@ -5,26 +5,45 @@
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
-#include <netinet/in.h> 
+#include <netinet/in.h>
+#include <netdb.h> 
 
 #define MAXINPUT 1024
-#define MAXOUTPUT 20148
+#define MAXOUTPUT 2048
 #define FOREVER for(;;)
+
+void string2hexString(char* input, char* output, int max)
+{
+	int loop;
+	int i; 
+
+	i=0;
+	loop=0;
+
+	while(loop)
+	for (loop; loop < max; ++loop)
+	{
+		sprintf((char*)(output+i),"%02X", input[loop]);
+		i+=2;
+	}
+	output[i++] = '\0';
+}
 
 int main(int argc, char* argv[])
 {
 	int udpSockFd, udpClientAddressSize, recievedDataSize;
 	char inputBuffer[MAXINPUT];
-	struct sockaddr_in udpServerAddress, udpClientAddress;
+	struct sockaddr_in udpClientAddress, udpServerAddress;
 
 	int tcpSockFd;
-	struct sockaddr_in tcpServerAddress, tcpClientAddress;
 	char outputBuffer[MAXOUTPUT];
-	// if(argc < 4) {
-	// 	perror("Wrong number of parameters");
-	// 	perror("Usage %s recieveport server_address sendport", argv[0]);
-	// 	exit(EXIT_FAILURE);
-	// }
+	struct sockaddr_in tcpServerAddress;
+
+	if(argc < 4) {
+		perror("Wrong number of parameters");
+		printf("Usage %s recieveport server_address sendport", argv[0]);
+		exit(EXIT_FAILURE);
+	}
 
 	memset(&inputBuffer, 0, MAXINPUT);
 	memset(&outputBuffer, 0, MAXOUTPUT);
@@ -45,14 +64,45 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if ((tcpSockFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("Udp socket creation failed");
+		exit(EXIT_FAILURE);
+	}
+
+	tcpServerAddress.sin_family = AF_INET;
+	tcpServerAddress.sin_port = htons(atoi(argv[3]));
+	struct hostent *server = gethostbyname(argv[2]);
+	bcopy( (char *) server->h_addr, (char *) &tcpServerAddress.sin_addr.s_addr, server->h_length );
+
+	if( connect( tcpSockFd, (struct sockaddr *) &tcpServerAddress, sizeof( tcpServerAddress ) ) < 0 ) {
+		perror("connect failed");
+		exit(EXIT_FAILURE);
+	}
+	else {
+		printf("Connected to server \n");
+	}
+
 	FOREVER {
 		recievedDataSize = recvfrom(udpSockFd, (char*) inputBuffer, MAXINPUT, MSG_WAITALL, (struct sockaddr*) &udpClientAddress, &udpClientAddressSize);
 		inputBuffer[recievedDataSize] = '\0';
 		printf("%s", inputBuffer);
+		// string2hexString(inputBuffer, outputBuffer, recievedDataSize);
+		int i,j;
+		for(i=0,j=0;i<recievedDataSize;i++,j+=2)
+		{ 
+			sprintf((char*)outputBuffer+j,"%02X",inputBuffer[i]);
+		}
+		// printf("====> %s \n", outputBuffer);
+		if (send(tcpSockFd, outputBuffer, MAXOUTPUT, 0) < 0) {
+			perror("Send failed");
+			exit(EXIT_FAILURE);
+		}
 		memset(&inputBuffer, 0, MAXINPUT);
+		memset(&outputBuffer, 0, MAXOUTPUT);
 	}
 
 	close(udpSockFd);
+	close(tcpSockFd);
 
 	return 0;
 }
