@@ -20,7 +20,6 @@ void string2hexString(char* input, char* output, int max)
 	i=0;
 	loop=0;
 
-	while(loop)
 	for (loop; loop < max; ++loop)
 	{
 		sprintf((char*)(output+i),"%02X", input[loop]);
@@ -83,16 +82,17 @@ int main(int argc, char* argv[])
 	}
 
 	FOREVER {
-		recievedDataSize = recvfrom(udpSockFd, (char*) inputBuffer, MAXINPUT, MSG_WAITALL, (struct sockaddr*) &udpClientAddress, &udpClientAddressSize);
+		recievedDataSize = recvfrom(udpSockFd, (char*) inputBuffer, MAXINPUT-1, MSG_WAITALL, (struct sockaddr*) &udpClientAddress, &udpClientAddressSize);
 		inputBuffer[recievedDataSize] = '\0';
 		printf("%s", inputBuffer);
-		// string2hexString(inputBuffer, outputBuffer, recievedDataSize);
 		int i,j;
 		for(i=0,j=0;i<recievedDataSize;i++,j+=2)
-		{ 
+		{
 			sprintf((char*)outputBuffer+j,"%02X",inputBuffer[i]);
 		}
 		// printf("====> %s \n", outputBuffer);
+		outputBuffer[2*recievedDataSize] = '\0';
+		printf("Len of outb: %d \n", strlen(outputBuffer));
 		if (send(tcpSockFd, outputBuffer, MAXOUTPUT, 0) < 0) {
 			perror("Send failed");
 			exit(EXIT_FAILURE);
