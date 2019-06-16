@@ -5,6 +5,19 @@ import java.net.*;
 import java.util.Scanner;
 
 public final class Program {
+
+    public enum InputType {
+        FILE,
+        KEYBOARD,
+        RANDOM,
+    }
+
+    public static void main(String[] args) {
+        Program program = new Program();
+        program.run(args);
+    }
+
+
     protected static final String ANSI_RESET = "\u001B[0m";
     protected static final String ANSI_BLACK = "\u001B[30m";
     protected static final String ANSI_RED = "\u001B[31m";
@@ -22,9 +35,9 @@ public final class Program {
 
     public Program () {}
 
-    public void run()
+    public void run(String[] args)
     {
-        getPortAndAddress();
+        getPortAndAddress(args);
 
         try {
             createStream(selectInputType());
@@ -45,8 +58,19 @@ public final class Program {
         bufferedReader = null;
     }
 
-    private void getPortAndAddress()
+    private void getPortAndAddress(String[] args)
     {
+        if(args.length == 2)
+        {
+            try {
+                ipAddress = InetAddress.getByName(args[0]);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+            portNumber = Integer.parseInt(args[1]);
+            return;
+        }
+
         Scanner scanner = new Scanner(System.in);
         System.out.println(ANSI_RED + "Write ip address: " + ANSI_RESET);
         while(true) {
